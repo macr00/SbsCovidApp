@@ -1,6 +1,7 @@
 package com.example.sbscovidapp
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -48,6 +49,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun CovidStatsTable(viewModel: GlobalStatsViewModel) {
     val viewState = rememberStateWithLifecycle(stateFlow = viewModel.uiStateFlow)
+    Log.d("View State", viewState.toString())
     CovidStatsTable(covidStats = viewState.value.globalStats)
 }
 
