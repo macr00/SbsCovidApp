@@ -4,7 +4,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,37 +17,46 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.sbscovidapp.domain.model.CovidStats
 import com.example.sbscovidapp.extensions.readableData
+import com.example.sbscovidapp.stats.CovidStatsViewModel
 import com.example.sbscovidapp.lifecycle.rememberStateWithLifecycle
 import com.example.sbscovidapp.ui.theme.SbsCovidAppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    private val viewModel: GlobalStatsViewModel by viewModels()
-    
+
+    private lateinit var globalStatsViewModel: CovidStatsViewModel
+    private lateinit var countryViewModel: CovidStatsViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             SbsCovidAppTheme {
-                // A surface container using the 'background' color from the theme
+                globalStatsViewModel = hiltViewModel(key = "global")
+                countryViewModel = hiltViewModel(key = "country")
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    CovidStatsTable(viewModel = viewModel)
-                    //Greeting("Android")
+                    Column {
+                        CovidStatsTable(viewModel = globalStatsViewModel)
+                        CovidStatsTable(viewModel = countryViewModel)
+                    }
                 }
             }
+            // TODO update this
+            globalStatsViewModel.loadGlobalStats()
+            countryViewModel.loadGlobalStats("SWE")
         }
     }
 }
 
 @Composable
-fun CovidStatsTable(viewModel: GlobalStatsViewModel) {
+fun CovidStatsTable(viewModel: CovidStatsViewModel) {
     val viewState = rememberStateWithLifecycle(stateFlow = viewModel.uiStateFlow)
     Log.d("View State", viewState.toString())
     CovidStatsTable(covidStats = viewState.value.globalStats)
@@ -55,10 +64,7 @@ fun CovidStatsTable(viewModel: GlobalStatsViewModel) {
 
 @Composable
 internal fun CovidStatsTable(covidStats: CovidStats) {
-    LazyColumn(
-        Modifier
-            .fillMaxSize()
-            .padding(16.dp)) {
+    LazyColumn(Modifier.padding(16.dp)) {
         val tableItems = covidStats.readableData()
         items(tableItems) {
             TableRow(label = it.first, value = it.second)
@@ -82,20 +88,4 @@ internal fun RowScope.LabelCell(label: String) {
 @Composable
 internal fun RowScope.ValueCell(value: String) {
     Text(text = value, Modifier.weight(0.5f))
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    SbsCovidAppTheme {
-        Greeting("Android")
-    }
 }

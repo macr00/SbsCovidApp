@@ -1,4 +1,4 @@
-package com.example.sbscovidapp
+package com.example.sbscovidapp.stats
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -14,38 +14,30 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class GlobalStatsViewModel
+class CovidStatsViewModel
 @Inject constructor(
     private val getCovidStats: GetCovidStats,
 ) : ViewModel() {
 
-    //private val globalStatsLoadingState = LoadingState()
     private val globalStatsStateFlow = MutableStateFlow(CovidStats.Empty)
-
-    private val _uiStateFlow = MutableStateFlow(GlobalViewState())
 
     val uiStateFlow = combine(
         globalStatsStateFlow,
         getCovidStats.loadingStateFlow,
     ) { args: Array<*> ->
-        GlobalViewState(
+        CovidStatsViewState(
             globalStats = args[0] as CovidStats,
             isLoading = args[1] as Boolean
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = GlobalViewState()
+        initialValue = CovidStatsViewState()
     )
-
-    init {
-        loadGlobalStats()
-    }
-
-    private fun loadGlobalStats() {
+    fun loadGlobalStats(isoCode: String? = null) {
         viewModelScope.launch {
             try {
-                val result = getCovidStats(GetCovidStats.Params("AUS"))
+                val result = getCovidStats(GetCovidStats.Params(isoCode))
                 if (result.isSuccess) {
                     globalStatsStateFlow.update { result.getOrThrow() }
                 }
@@ -54,22 +46,4 @@ class GlobalStatsViewModel
             }
         }
     }
-
-    /*
-    private fun loadGlobalStats() {
-        viewModelScope.launch {
-            getGlobalStats(Unit).launchWith(
-                scope = this,
-                loadingState = globalStatsLoadingState,
-            ).catch { t ->
-                // TODO handle exception - perhaps in collectResult
-            }.collectResult(
-                onSuccess = { value -> globalStatsState.update { value } },
-                onFailure = { }
-            )
-        }
-    }
-
-     */
-
 }
