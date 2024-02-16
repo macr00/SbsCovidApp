@@ -1,6 +1,6 @@
 package com.example.sbscovidapp.domain.model
 
-data class Country(
+data class Region(
     val iso: String,
     val name: String
 )
