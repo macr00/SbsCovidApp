@@ -2,13 +2,16 @@ package com.example.sbscovidapp.stats
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.sbscovidapp.domain.interactor.GetRegionList
 import com.example.sbscovidapp.domain.interactor.GetCovidStats
-import com.example.sbscovidapp.domain.model.Region
+import com.example.sbscovidapp.domain.interactor.GetRegionList
 import com.example.sbscovidapp.domain.model.CovidStats
+import com.example.sbscovidapp.domain.model.Region
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -25,7 +28,7 @@ class CovidStatsViewModel
     private val getRegionList: GetRegionList,
 ) : ViewModel() {
 
-    private val covidStatsStateFlow: MutableStateFlow<CovidStats> =
+    private val covidStatsStateFlow: MutableStateFlow<CovidStats?> =
         MutableStateFlow(CovidStats.Empty)
 
     private val regionListStateFlow: MutableStateFlow<List<Region>> =
@@ -34,7 +37,7 @@ class CovidStatsViewModel
     private val selectedRegionStateFlow: MutableStateFlow<Region> =
         MutableStateFlow(DefaultGlobal)
 
-    // Use to observe changes in selected region
+    // Distinct operator is applied to only emit when the selected region changes
     private val distinctRegionFlow: Flow<Region> = selectedRegionStateFlow
         .distinctUntilChanged { old, new -> old.iso == new.iso }
 
@@ -43,13 +46,15 @@ class CovidStatsViewModel
         covidStatsStateFlow,
         getCovidStats.loadingStateFlow,
         distinctRegionFlow,
-        regionListStateFlow
+        regionListStateFlow,
+        getRegionList.loadingStateFlow
     ) { args: Array<*> ->
         CovidStatsViewState(
-            covidStats = args[0] as CovidStats,
+            covidStats = args[0] as CovidStats?,
             isStatsLoading = args[1] as Boolean,
             region = args[2] as Region,
-            regionList = args[3] as List<Region>
+            regionList = args[3] as List<Region>,
+            isRegionListLoading = args[4] as Boolean
         )
     }.stateIn(
         scope = viewModelScope,
@@ -71,12 +76,11 @@ class CovidStatsViewModel
                     listOf(DefaultGlobal) + result.getOrThrow()
                 }
             } catch (e: Exception) {
-                // TODO handle error
+                // TODO
             }
         }
     }
 
-    // TODO implement retry on failure
     fun loadRegionStats(region: Region) {
         viewModelScope.launch {
             try {
@@ -86,7 +90,7 @@ class CovidStatsViewModel
                     result.getOrThrow()
                 }
             } catch (e: Exception) {
-                // TODO handle error
+                covidStatsStateFlow.emit(null)
             }
         }
     }
