@@ -7,10 +7,12 @@ import javax.inject.Inject
 class GetCovidStats
 @Inject constructor(
     private val repository: CovidDataRepository,
-) : ResultInteractor<GetCovidStats.Params, CovidStats>() {
+) : Interactor<GetCovidStats.Params, CovidStats>() {
 
-    override suspend fun doWork(params: Params): CovidStats =
-        repository.getGlobalStats(params.isoCode)
+    override suspend fun doWork(params: Params): Result<CovidStats> =
+        runCatching {
+            repository.getCovidStats(params.iso.ifBlank { null })
+        }
 
-    data class Params(val isoCode: String? = null)
+    data class Params(val iso: String)
 }

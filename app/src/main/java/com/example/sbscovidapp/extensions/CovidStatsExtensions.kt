@@ -1,8 +1,8 @@
 package com.example.sbscovidapp.extensions
 
 import com.example.sbscovidapp.domain.model.CovidStats
+import java.math.RoundingMode
 
-// TODO rename function
 fun CovidStats.readableData(): List<Pair<String, String>> =
     listOf(
         Pair("Confirmed cases", confirmed.toString()),
@@ -10,5 +10,8 @@ fun CovidStats.readableData(): List<Pair<String, String>> =
         Pair("Fatality Rate", fatalityRate.toPercentage())
     )
 
-// TODO limit to two decimal places
-fun Double.toPercentage() = (this * 100).toString().plus("%")
+fun Double.toPercentage() = this.toBigDecimal()
+    .setScale(4, RoundingMode.HALF_UP)
+    .let {
+        (it.toDouble() * 100).toString().plus("%")
+    }

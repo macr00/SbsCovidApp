@@ -4,6 +4,6 @@ import com.example.sbscovidapp.domain.model.Region
 import com.example.sbscovidapp.domain.model.CovidStats
 
 interface CovidDataRepository {
-    suspend fun getGlobalStats(iso: String? = null): CovidStats
+    suspend fun getCovidStats(iso: String? = null): CovidStats
     suspend fun getRegionList(): List<Region>
 }

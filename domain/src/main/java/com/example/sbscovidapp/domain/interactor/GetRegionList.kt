@@ -7,8 +7,14 @@ import javax.inject.Inject
 class GetRegionList
 @Inject constructor(
     private val repository: CovidDataRepository
-) : ResultInteractor<Unit, List<Region>>() {
+) : Interactor<Unit, List<Region>>() {
 
-    override suspend fun doWork(params: Unit): List<Region> =
-        repository.getRegionList()
+    override suspend fun doWork(params: Unit): Result<List<Region>> =
+        runCatching {
+            DefaultRegionList + repository.getRegionList()
+        }
+
+    companion object {
+        val DefaultRegionList = listOf(Region.Global)
+    }
 }

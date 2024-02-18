@@ -1,24 +1,31 @@
 package com.example.sbscovidapp.stats
 
+import com.example.sbscovidapp.domain.interactor.GetRegionList.Companion.DefaultRegionList
 import com.example.sbscovidapp.domain.model.Region
 import com.example.sbscovidapp.domain.model.CovidStats
 
 data class CovidStatsViewState(
-    val covidStats: CovidStats? = null,
+    val covidStatsResult: Result<CovidStats>? = null,
     val region: Region,
-    val regionList: List<Region>,
+    val regionListResult: Result<List<Region>>? = null,
     val isStatsLoading: Boolean = false,
     val isRegionListLoading: Boolean = false,
 ) {
 
-    val showError: Boolean
-        get() = !isStatsLoading && covidStats == null
+    val covidStats: CovidStats = covidStatsResult?.getOrNull() ?: CovidStats.Empty
+
+    val regionList: List<Region> = regionListResult?.getOrNull() ?: DefaultRegionList
+
+    val showCovidStatsError: Boolean
+        get() = !isStatsLoading && covidStatsResult?.isFailure == true
+
+    val showRegionListError: Boolean
+        get() = !isRegionListLoading && regionListResult?.isFailure == true
 
     companion object {
         val Initial = CovidStatsViewState(
-            covidStats = CovidStats.Empty,
-            region = DefaultGlobal,
-            regionList = listOf(DefaultGlobal),
+            covidStatsResult = null,
+            region = Region.Global,
         )
     }
 }

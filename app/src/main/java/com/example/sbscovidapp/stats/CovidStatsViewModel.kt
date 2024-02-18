@@ -4,20 +4,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sbscovidapp.domain.interactor.GetCovidStats
 import com.example.sbscovidapp.domain.interactor.GetRegionList
+import com.example.sbscovidapp.domain.interactor.GetRegionList.Companion.DefaultRegionList
+import com.example.sbscovidapp.domain.interactor.invoke
 import com.example.sbscovidapp.domain.model.CovidStats
 import com.example.sbscovidapp.domain.model.Region
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -28,14 +27,8 @@ class CovidStatsViewModel
     private val getRegionList: GetRegionList,
 ) : ViewModel() {
 
-    private val covidStatsStateFlow: MutableStateFlow<CovidStats?> =
-        MutableStateFlow(CovidStats.Empty)
-
-    private val regionListStateFlow: MutableStateFlow<List<Region>> =
-        MutableStateFlow(listOf(DefaultGlobal))
-
     private val selectedRegionStateFlow: MutableStateFlow<Region> =
-        MutableStateFlow(DefaultGlobal)
+        MutableStateFlow(Region.Global)
 
     // Distinct operator is applied to only emit when the selected region changes
     private val distinctRegionFlow: Flow<Region> = selectedRegionStateFlow
@@ -43,18 +36,18 @@ class CovidStatsViewModel
 
     @Suppress("UNCHECKED_CAST")
     val uiStateFlow = combine(
-        covidStatsStateFlow,
-        getCovidStats.loadingStateFlow,
-        distinctRegionFlow,
-        regionListStateFlow,
-        getRegionList.loadingStateFlow
+        getCovidStats.flow.onStart { emit(null) },
+        getCovidStats.isLoading,
+        getRegionList.flow.onStart { emit(Result.success(DefaultRegionList)) },
+        getRegionList.isLoading,
+        distinctRegionFlow
     ) { args: Array<*> ->
         CovidStatsViewState(
-            covidStats = args[0] as CovidStats?,
+            covidStatsResult = args[0] as Result<CovidStats>?,
             isStatsLoading = args[1] as Boolean,
-            region = args[2] as Region,
-            regionList = args[3] as List<Region>,
-            isRegionListLoading = args[4] as Boolean
+            regionListResult = args[2] as Result<List<Region>>?,
+            isRegionListLoading = args[3] as Boolean,
+            region = args[4] as Region,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -67,31 +60,15 @@ class CovidStatsViewModel
         observeRegionChanges()
     }
 
-    // TODO implement retry on failure
     fun loadCountryList() {
         viewModelScope.launch {
-            try {
-                val result = getRegionList(Unit)
-                regionListStateFlow.update {
-                    listOf(DefaultGlobal) + result.getOrThrow()
-                }
-            } catch (e: Exception) {
-                // TODO
-            }
+            getRegionList.invoke()
         }
     }
 
     fun loadRegionStats(region: Region) {
         viewModelScope.launch {
-            try {
-                val iso = region.iso.ifBlank { null }
-                val result = getCovidStats(GetCovidStats.Params(iso))
-                covidStatsStateFlow.update {
-                    result.getOrThrow()
-                }
-            } catch (e: Exception) {
-                covidStatsStateFlow.emit(null)
-            }
+            getCovidStats(GetCovidStats.Params(region.iso))
         }
     }
 
@@ -104,12 +81,9 @@ class CovidStatsViewModel
     private fun observeRegionChanges() {
         viewModelScope.launch {
             distinctRegionFlow
-                .collectLatest {
-                    loadRegionStats(it)
+                .collectLatest { iso ->
+                    loadRegionStats(iso)
                 }
         }
     }
 }
-
-// TODO perhaps move to domain package
-val DefaultGlobal = Region("", "Global")

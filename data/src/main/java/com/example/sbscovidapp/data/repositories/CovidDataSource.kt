@@ -13,7 +13,7 @@ class CovidDataSource(
     private val countryMapper: CountryMapper
 ) : CovidDataRepository {
 
-    override suspend fun getGlobalStats(iso: String?): CovidStats =
+    override suspend fun getCovidStats(iso: String?): CovidStats =
      covidApiService.getGlobalStats(iso)
             .let { covidStatsMapper.map(it.data) }
 
