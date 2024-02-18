@@ -3,6 +3,7 @@ package com.example.sbscovidapp.stats
 import com.example.sbscovidapp.domain.interactor.GetCovidStats
 import com.example.sbscovidapp.domain.interactor.GetRegionList
 import com.example.sbscovidapp.domain.interactor.GetRegionList.Companion.DefaultRegionList
+import com.example.sbscovidapp.domain.interactor.invoke
 import com.example.sbscovidapp.domain.model.CovidStats
 import com.example.sbscovidapp.domain.model.Region
 import io.mockk.coEvery
@@ -73,7 +74,7 @@ class CovidStatsViewModelTest {
     }
 
     @Test
-    fun `test getCovidStats result when successful`() = runTest {
+    fun `test uiState when GetCovidStats result is successful`() = runTest {
         val covidStats = CovidStats(
             date = "2024-02-15",
             lastUpdate = "2024-02-13",
@@ -89,22 +90,24 @@ class CovidStatsViewModelTest {
         }
 
         covidStatsStateFlow.tryEmit(Result.success(covidStats))
+
         job.cancel()
     }
 
     @Test
-    fun `test getCovidStats result when failure`() = runTest {
+    fun `test uiState when GetCovidStats result is failure`() = runTest {
         val job = launch(UnconfinedTestDispatcher(testScheduler)) {
             val last = viewModel.uiStateFlow.last()
             assertEquals(true, last.showCovidStatsError)
         }
 
         covidStatsStateFlow.tryEmit(Result.failure(Throwable()))
+
         job.cancel()
     }
 
     @Test
-    fun `test getRegionList result when successful`() = runTest {
+    fun `test uiState when GetRegionList result is successful`() = runTest {
         val regionList = listOf(Australia, Brazil, Sweden)
 
         val job = launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -114,20 +117,43 @@ class CovidStatsViewModelTest {
         }
 
         regionListStateFlow.tryEmit(Result.success(regionList))
+
         job.cancel()
     }
 
     @Test
-    fun `test getRegionList result when failure`() = runTest {
+    fun `test uiState when GetRegionList result is failure`() = runTest {
         val job = launch(UnconfinedTestDispatcher(testScheduler)) {
             val last = viewModel.uiStateFlow.last()
             assertEquals(true, last.showRegionListError)
         }
 
         regionListStateFlow.tryEmit(Result.failure(Throwable()))
+
         job.cancel()
     }
 
+    @Test
+    fun `test getCovidStatsForRegion invokes GetCovidStats`() = runTest {
+        viewModel.getCovidStatsForRegion(Brazil)
+
+        val job = launch(UnconfinedTestDispatcher(testScheduler)) {
+            coVerify(exactly = 1) { getCovidStatsMock(GetCovidStats.Params(Brazil.iso)) }
+        }
+
+        job.cancel()
+    }
+
+    @Test
+    fun `test getRegionList invokes GetRegionList`() = runTest {
+        viewModel.getRegionsList()
+
+        val job = launch(UnconfinedTestDispatcher(testScheduler)) {
+            coVerify(exactly = 1) { getRegionListMock.invoke() }
+        }
+
+        job.cancel()
+    }
     @Test
     fun `test onRegionSelected invokes getCovidStats`() = runTest {
         viewModel.onRegionSelected(Australia)
@@ -140,6 +166,7 @@ class CovidStatsViewModelTest {
             coVerify(exactly = 1) { getCovidStatsMock(GetCovidStats.Params(Australia.iso)) }
             coVerify(exactly = 1) { getCovidStatsMock(GetCovidStats.Params(Sweden.iso)) }
         }
+
         job.cancel()
     }
 
