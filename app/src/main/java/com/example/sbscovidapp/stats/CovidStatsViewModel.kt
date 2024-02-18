@@ -56,17 +56,17 @@ class CovidStatsViewModel
     )
 
     init {
-        loadCountryList()
+        getRegionsList()
         observeRegionChanges()
     }
 
-    fun loadCountryList() {
+    fun getRegionsList() {
         viewModelScope.launch {
             getRegionList.invoke()
         }
     }
 
-    fun loadRegionStats(region: Region) {
+    fun getCovidStatsForRegion(region: Region) {
         viewModelScope.launch {
             getCovidStats(GetCovidStats.Params(region.iso))
         }
@@ -82,7 +82,7 @@ class CovidStatsViewModel
         viewModelScope.launch {
             distinctRegionFlow
                 .collectLatest { iso ->
-                    loadRegionStats(iso)
+                    getCovidStatsForRegion(iso)
                 }
         }
     }

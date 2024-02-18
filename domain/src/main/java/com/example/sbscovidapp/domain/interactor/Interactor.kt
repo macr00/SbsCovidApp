@@ -26,7 +26,8 @@ abstract class Interactor<P : Any, T> {
 
     suspend operator fun invoke(
         params: P,
-        timeout: Duration = DefaultTimeout) {
+        timeout: Duration = DefaultTimeout
+    ) {
         try {
            withTimeout(timeout) {
                loadingState.addLoader()

@@ -3,7 +3,7 @@ package com.example.sbscovidapp.extensions
 import com.example.sbscovidapp.domain.model.CovidStats
 import java.math.RoundingMode
 
-fun CovidStats.readableData(): List<Pair<String, String>> =
+fun CovidStats.uiFormatted(): List<Pair<String, String>> =
     listOf(
         Pair("Confirmed cases", confirmed.toString()),
         Pair("Deaths", deaths.toString()),

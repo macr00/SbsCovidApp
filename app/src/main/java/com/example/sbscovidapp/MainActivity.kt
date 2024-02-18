@@ -43,9 +43,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupProperties
-import com.example.sbscovidapp.domain.model.CovidStats
 import com.example.sbscovidapp.domain.model.Region
-import com.example.sbscovidapp.extensions.readableData
+import com.example.sbscovidapp.extensions.uiFormatted
 import com.example.sbscovidapp.lifecycle.rememberStateWithLifecycle
 import com.example.sbscovidapp.stats.CovidStatsViewModel
 import com.example.sbscovidapp.ui.theme.SbsCovidAppTheme
@@ -123,7 +122,7 @@ fun CovidStatsContent(viewModel: CovidStatsViewModel, snackbarHostState: Snackba
             }
 
             else -> {
-                CovidStatsTable(covidStats = viewState.value.covidStats)
+                CovidStatsTable(covidStats = viewState.value.covidStats.uiFormatted())
             }
         }
 
@@ -134,15 +133,14 @@ fun CovidStatsContent(viewModel: CovidStatsViewModel, snackbarHostState: Snackba
 }
 
 @Composable
-internal fun CovidStatsTable(covidStats: CovidStats) {
+internal fun CovidStatsTable(covidStats: List<Pair<String, String>>) {
     LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val tableItems = covidStats.readableData()
-        items(tableItems) {
+        items(covidStats) {
             TableRow(label = it.first, value = it.second)
         }
     }
@@ -251,7 +249,7 @@ fun CovidStatsErrorRetry(viewModel: CovidStatsViewModel, region: Region) {
             Button(
                 modifier = Modifier.padding(vertical = 16.dp),
                 onClick = {
-                    viewModel.loadRegionStats(region)
+                    viewModel.getCovidStatsForRegion(region)
                 }) {
                 Text(text = "RETRY")
             }
@@ -271,7 +269,7 @@ fun RegionListErrorSnackbar(
             duration = SnackbarDuration.Indefinite
         )
         if (result == SnackbarResult.ActionPerformed) {
-            viewModel.loadCountryList()
+            viewModel.getRegionsList()
         }
     }
 }
