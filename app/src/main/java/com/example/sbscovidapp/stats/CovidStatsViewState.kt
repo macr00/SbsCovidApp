@@ -3,7 +3,6 @@ package com.example.sbscovidapp.stats
 import com.example.sbscovidapp.domain.interactor.GetRegionList.Companion.DefaultRegionList
 import com.example.sbscovidapp.domain.model.Region
 import com.example.sbscovidapp.domain.model.CovidStats
-import com.example.sbscovidapp.extensions.uiFormatted
 
 data class CovidStatsViewState(
     private val covidStatsResult: Result<CovidStats>? = null,
