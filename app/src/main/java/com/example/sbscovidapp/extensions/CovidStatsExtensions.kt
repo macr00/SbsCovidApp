@@ -1,7 +1,7 @@
 package com.example.sbscovidapp.extensions
 
 import com.example.sbscovidapp.domain.model.CovidStats
-import java.math.RoundingMode
+import java.text.DecimalFormat
 
 fun CovidStats.uiFormatted(): List<Pair<String, String>> =
     listOf(
@@ -10,8 +10,6 @@ fun CovidStats.uiFormatted(): List<Pair<String, String>> =
         Pair("Fatality Rate", fatalityRate.toPercentage())
     )
 
-fun Double.toPercentage() = this.toBigDecimal()
-    .setScale(4, RoundingMode.HALF_UP)
-    .let {
-        (it.toDouble() * 100).toString().plus("%")
-    }
+fun Double.toPercentage(): String {
+    return DecimalFormat("##.##%").format(this)
+}
